@@ -1,0 +1,33 @@
+version: "3.8"
+
+services:
+  db:
+    image: mysql:latest
+    environment:
+      - "MYSQL_ALLOW_EMPTY_PASSWORD=yes"
+    volumes:
+      - "./.mysql_data_dir:/var/lib/mysql/"
+      - "./priv/dump.sql:/var/data/dump.sql"
+
+  zk:
+    image: debezium/zookeeper:1.2
+
+  kafka:
+    image: debezium/kafka:1.2
+    environment:
+      - "ZOOKEEPER_CONNECT=zk:2181"
+    depends_on:
+      - zk
+
+  connect:
+    image: debezium/connect:1.2
+    ports:
+      - "8083:8083"
+    environment:
+      - "BOOTSTRAP_SERVERS=kafka:9092"
+      - "CONFIG_STORAGE_TOPIC=my_connect_configs"
+      - "OFFSET_STORAGE_TOPIC=my_connect_offsets"
+      - "STATUS_STORAGE_TOPIC=my_connect_statuses"
+    depends_on:
+      - db
+      - kafka
